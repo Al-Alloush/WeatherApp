@@ -1,0 +1,9 @@
+requests
+Flask
+Flask-SocketIO
+eventlet
+configparser
+redis
+numpy
+pandas
+requests
