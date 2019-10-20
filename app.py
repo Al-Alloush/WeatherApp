@@ -42,42 +42,50 @@ def cache_current_weather(data, postal):
     '''
     after check, if they're more than x times between the last insert and current time,
     maybe the API Server has not updated the data jet, for that chech the dt time '''
-    # check if the dt time not existed before adding the new dt in a cdb
-    if  cache.exists(postal+':current_dt', dt):
-        # get the curent date with berlin timezone
-        date = datetime.now(tz).strftime("%Y/%m/%d %H:%M:%S")
-        # start pipelining
-        pipe = cache.pipeline()
-        # looping over all labels in WeatherData
-        for label in data:
-            '''
-            because every label in weather data has special form
-            use if condations to to decide which form matches with code
-            '''
-            if  label == 'visibility' or label == 'timezone' or label == 'name':
-                #print(label + ' => ' + label +':'+ str(data[label]) )
-                pipe.hset(postal+':current:'+dt, label , data[label] )
-            elif label == 'weather':
-                for sublabel in data[label][0]:
-                    #print(label + ' => ' + sublabel +':'+ str(data[label][0][sublabel]) )
-                    pipe.hset(postal+':current:'+dt, sublabel , data[label][0][sublabel] )
-            elif label == 'main' or label == 'sys' or label == 'wind':
-                for sublabel in data[label]:
-                    #print(label + ' => ' + sublabel +':'+ str(data[label][sublabel]) )
-                    pipe.hset(postal+':current:'+dt, sublabel , data[label][sublabel] )
-        # End for loop
 
-        pipe.hset(postal+':current:'+dt, 'date',date  )
-        # time list
-        pipe.lpush(postal+':current_dt', dt  )
-        # executed pipe after setting the all pipe orders execution
-        pipe.execute()
+    # get the curent date with berlin timezone
+    date = datetime.now(tz).strftime("%Y/%m/%d %H:%M:%S")
+    # start pipelining
+    pipe = cache.pipeline()
+    # looping over all labels in WeatherData
+    for label in data:
+        '''
+        because every label in weather data has special form
+        use if condations to to decide which form matches with code
+        form1 = data[label]
+        form2 = data[label][sublabel]
+        form3 = data[label][0][sublabel]
+        '''
+        # form1
+        if  label == 'visibility' or label == 'timezone' or label == 'name':
+            #print(label + ' => ' + label +':'+ str(data[label]) )
+            pipe.hset(postal+':current:'+dt, label , data[label] )
+        # form2
+        elif label == 'main' or label == 'sys' or label == 'wind':
+            for sublabel in data[label]:
+                #print(label + ' => ' + sublabel +':'+ str(data[label][sublabel]) )
+                pipe.hset(postal+':current:'+dt, sublabel , data[label][sublabel] )
+        # form3
+        elif label == 'weather':
+            for sublabel in data[label][0]:
+                #print(label + ' => ' + sublabel +':'+ str(data[label][0][sublabel]) )
+                pipe.hset(postal+':current:'+dt, sublabel , data[label][0][sublabel] )
+
+    # End for loop
+    print('Added data for this  Date : '+ dt + '  in cache DB')
+    pipe.hset(postal+':current:'+dt, 'date',date  )
+    # time list
+    pipe.lpush(postal+':current_dt', dt  )
+    # executed pipe after setting the all pipe orders execution
+    pipe.execute()
 
     # return the new Weather data
     return cache.hgetall(postal+':current:'+dt)
 
 def cach_5days_weather(data, postal):
     print('+++++++++ - def cach_5days_weather(data, postal):')
+    rlistKeys = postal+':forecast_dt'
+    rDtKeys = postal+':forecast'
     '''
     needed data inside the Weather forecast in label "list",
     and because every label inside "list" has special form
@@ -86,42 +94,79 @@ def cach_5days_weather(data, postal):
     # get the curent date with berlin timezone
     date = datetime.now(tz).strftime("%Y/%m/%d %H:%M:%S")
 
+    '''
+    !! with cache.hset() not work, why?, I don't know!!
+    for that use pipelining to added forecast data
+    '''
+    # start pipelining
+    pipe = cache.pipeline()
     for i in range(len(data['list'])):
         for label in data['list'][i]:
             #print('='+ str(data['list'][i]))
             # get and convert current utctime to strng, need this label in a variable with every loop
             dt = str(data['list'][i]['dt'])
 
+            # to prevent Pushing dt(time) inside forecast_dt list with labels times, we need just one time
+            if label =='dt' :
+                # check if this dt existing in forecast_dt list, if not add it
+                if not cache.exists(rlistKeys, dt):
+                    #print('false: ' +str(dt))
+                    pipe.lpush(rlistKeys, dt)
 
-            if cache.exists(postal+':forecast_dt', dt):
-                print('true')
-            else:
-                print('false')
-                cache.lpush(postal+':forecast_dt', dt  )
-
-                
-
-            if  label == 'visibility' or label == 'timezone' or label == 'name' or label == 'dt' or label == 'dt_txt':
-                #print(label + ' => ' + label +':'+ str(data['list'][i][label]) )
-                cache.hset(postal+':forecast:'+dt, label , str(data['list'][i][label] ))
-
+            # set current time add this Hash
+            pipe.hset(rDtKeys+':'+dt, 'add_date', date  )
+            '''
+            because every label in weather data has special form
+            use if condations to to decide which form matches with code
+            form1 = data['list'][i][label]
+            form2 = data['list'][i][sublabel]
+            form3 = data['list'][i][0][sublabel]
+            use these forms in forecastNotMatched() to compare between data
+            '''
+            # form 1
+            if  label == 'dt' or label == 'dt_txt':
+                label_val = data['list'][i][label]
+                #print(label + ' => ' + label +':'+ str(label_val) )
+                if forecastNotMatched(label,0, label_val, rDtKeys, dt, 1):
+                    pipe.hset(rDtKeys+':'+dt, label , str(label_val))
+            # form2
+            elif label == 'main' or label == 'wind':
+                for sublabel in data['list'][i][label]:
+                    label_val = data['list'][i][label][sublabel]
+                    #print(label + ' => ' + sublabel +':'+ str(label_val) )
+                    if forecastNotMatched(label, sublabel, label_val,rDtKeys, dt, 2):
+                        pipe.hset(rDtKeys+':'+dt, sublabel ,str(label_val) )
+            # form3
             elif label == 'weather':
                 for sublabel in data['list'][i][label][0]:
-                    #print(label + ' => ' + sublabel +':'+ str(data['list'][i][label][0][sublabel]) )
-                    cache.hset(postal+':forecast:'+dt, sublabel , str(data['list'][i][label][0][sublabel]) )
-            elif label == 'main' or label == 'sys' or label == 'wind':
-                for sublabel in data['list'][i][label]:
-                    #print(label + ' => ' + sublabel +':'+ str(data['list'][i][label][sublabel]) )
-                    cache.hset(postal+':forecast:'+dt, sublabel ,str(data['list'][i][label][sublabel]) )
+                    label_val = data['list'][i][label][0][sublabel]
+                    #print(label + ' => ' + sublabel +':'+ str(label_val) )
+                    if forecastNotMatched(label, sublabel, label_val, rDtKeys, dt, 3):
+                        pipe.hset(rDtKeys+':'+dt, sublabel , str(label_val) )
 
 
+    # executed pipe after setting the all pipe orders execution
+    pipe.execute()
 
-            # add date to hash
-            cache.hset(postal+':forecast:'+dt, 'add_date', date  )
-            cache.hset(postal+':forecast:'+dt, 'fc_date', data['list'][i]['dt_txt'])
+def forecastNotMatched(label , sublabel, label_val,rDtKeys, dt, form):
 
-    print('Add,  end')
+    if form == 1:
+        field_value = cache.hget(rDtKeys+':'+dt, label )
+        if field_value != label_val:
+            print('from cacheDB: ' + str(field_value) )
+            print('from current: ' + str(label_val) )
+            print(f'form1,rDtKeys: {rDtKeys}=>{dt}=>{label}: {field_value}')#
+    elif form == 22:
+        field_value = cache.hget(rDtKeys+':'+dt, label )
+        if field_value != label_val:
+            print('from cacheDB: ' + str(field_value) )
+            print('from current: ' + str(label_val) )
+            print(f'form3, rDtKeys:{rDtKeys}=>{dt}=>{label}[{sublabel}]: {label_val}')
+    elif form == 33:
+        print(f'form3, rDtKeys:{rDtKeys}=>{dt}=>{label}[{sublabel}]: {label_val}')
 
+    # if not Matched
+    return True
 
 def insertInRedisTimeSeries(data, postal):
     #print(cache.execute_command("TS.ADD temp:city 1548149191 49"));
@@ -241,36 +286,53 @@ def handle_message(message):
     date_now_utc = round(datetime.utcnow().timestamp())+ 7200 # + Two hours
 
     # Allowable time =  before 30 minutes from current time 30/60 = 1800
-    allowable_minutes = 1800
+    allowable_minutes = 950
 
     # get te last element added in list
     existing_data = cache.lrange( message["postal"]+':current_dt', '0',  '0' )
-    print('!!!!!!!!!!!!!!!!!!!!!!')
-    time = 0
+    print('_____________')
+    cDBtime = 0
     t = 0
+    program_starts = time.time()
+    # at first start there are no data inside cache DB
     if existing_data:
-        for time in existing_data:
-            t = int(date_now_utc)-int(time)
+        for cDBtime in existing_data:
+            time_difference = int(date_now_utc)-int(cDBtime)
             # if the utctime in the cdb is X minutes older than the current utctime
-            if t <= allowable_minutes:
-                print('date_now_utc-time >= allowable_minutes')
-                weather_current = cache.hgetall(message["postal"]+':current:'+time)
+            if time_difference <= allowable_minutes:
+                print('Current Datetime('+str(date_now_utc)+') in allowable')
+                print('time difference  : '+ str((allowable_minutes-t))+ ' seconds')
+                weather_current = cache.hgetall(message["postal"]+':current:'+cDBtime)
+                end_time = time.time()
+                print('Current Datetime('+str(date_now_utc)+') in allowable time, get prossess time : '+str(end_time-program_starts))
+                print('Update after about  : '+ str((allowable_minutes-t)/60)+ ' Minutes')
             else:
-                print('Not => date_now_utc-time >= allowable_minutes')
+                print('Current Datetime('+str(date_now_utc)+') Not allowable')
+                print('t  : '+ str((allowable_minutes-t))+ ' Minutes')
                 # # if the utctime in the cdb is X minutes less than the current utctime
                 # get the Data From API, stor these data in cdb
                 weather_current= get_current_weather(apiKey, message["postal"]+','+message["country"],'zip')
                 weather_current = cache_current_weather(weather_current, str(message["postal"]))
+                end_time = time.time()
+                print('Current Datetime('+str(cDBtime)+') not allowable, insert and get prossess time : '+str(end_time-program_starts))
     else:
         # if there are no data in cdb
         weather_current= get_current_weather(apiKey, message["postal"]+','+message["country"],'zip')
         weather_current = cache_current_weather(weather_current, str(message["postal"]))
+        end_time = time.time()
+        print('Current Datetime not allowable, insert and get prossess time : '+str(end_time-program_starts))
 
-    print('current time _____: '+ str(date_now_utc))
-    print('last time in redis: '+ str(time))
-    print('the sub range ____: '+ str(t))
-    print(str(type(existing_data)))
-    print('??????????????????????')
+    print('=====================================')
+
+    # delete all old times in cache DB
+    # old_dates = cache.lrange( message["postal"]+':current_dt', '1',  '+' )
+    # if old_dates:
+    #     for old_date in old_dates:
+    #         # delete all old dates
+    #         if cache.delete(message["postal"]+':current:'+ str(old_date)):
+    #             # if delete success, delete from list too
+    #             if cache.lrem (message["postal"]+':current_dt -1', str(old_date)):
+    #                 print('delete  '+message["postal"]+':current:'+ str(old_date))
 
 
 

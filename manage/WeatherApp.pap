@@ -1,0 +1,138 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<FRAME GUID="2FB25471-B62C-4EE6-BD43-F819C095ACF8" FORMAT="0000" APP_VERSION="2.2.0.8" CHECKSUM="70FBCA01F460E95E">
+  <PROJECT FORMAT="1.00" NAME="WeatherApp" AUTHOR="AlAlloush" CREATED="2019.10.19 11:58:31" MODIFIED="2019.10.19 13:17:15">
+    <DIAGRAMS>
+      <DIAGRAM FORMAT="1.00" ID="0" NAME="Current Weather" CREATED="2019.10.19 11:58:55" MODIFIED="2019.10.19 13:17:15">
+        <LAYOUT FORMAT="1.00" COLUMNS="4" ROWS="8">
+          <ENTRIES>
+            <ENTRY COLUMN="0" ROW="5">
+              <FIGURE SUBTYPE="PapActivity" FORMAT="1.00" ID="20">
+                <TEXT><![CDATA[weathrData = get_current_weather()]]></TEXT>
+              </FIGURE>
+            </ENTRY>
+            <ENTRY COLUMN="0" ROW="6">
+              <FIGURE SUBTYPE="PapConnector" FORMAT="1.00" ID="23">
+                <TEXT><![CDATA[]]></TEXT>
+              </FIGURE>
+            </ENTRY>
+            <ENTRY COLUMN="1" ROW="0" ANCHOR="True">
+              <FIGURE SUBTYPE="PapTitle" FORMAT="1.00" ID="0">
+                <TEXT><![CDATA[Current Weather]]></TEXT>
+              </FIGURE>
+            </ENTRY>
+            <ENTRY COLUMN="1" ROW="1">
+              <FIGURE SUBTYPE="PapStart" FORMAT="1.00" ID="1">
+                <TEXT><![CDATA[Start]]></TEXT>
+              </FIGURE>
+            </ENTRY>
+            <ENTRY COLUMN="1" ROW="2">
+              <FIGURE SUBTYPE="PapActivity" FORMAT="1.00" ID="5">
+                <TEXT><![CDATA[ctuTime = datetime.utcnow()
+ctuTime = ctuTime + 7200
+allowable_minutes = 950]]></TEXT>
+              </FIGURE>
+            </ENTRY>
+            <ENTRY COLUMN="1" ROW="3">
+              <FIGURE SUBTYPE="PapActivity" FORMAT="1.00" ID="7">
+                <TEXT><![CDATA[lastInserTime = cache.lrange( 'key', '0', '0' )]]></TEXT>
+              </FIGURE>
+            </ENTRY>
+            <ENTRY COLUMN="1" ROW="5">
+              <FIGURE SUBTYPE="PapCondition" FORMAT="1.00" ID="9">
+                <TEXT><![CDATA[Allowable Time?]]></TEXT>
+              </FIGURE>
+            </ENTRY>
+            <ENTRY COLUMN="1" ROW="6">
+              <FIGURE SUBTYPE="PapOutput" FORMAT="1.00" ID="29">
+                <TEXT><![CDATA[socketio.emit( 'htmlKey', weathrData)]]></TEXT>
+              </FIGURE>
+            </ENTRY>
+            <ENTRY COLUMN="1" ROW="7">
+              <FIGURE SUBTYPE="PapEnd" FORMAT="1.00" ID="2">
+                <TEXT><![CDATA[End]]></TEXT>
+              </FIGURE>
+            </ENTRY>
+            <ENTRY COLUMN="2" ROW="1">
+              <FIGURE SUBTYPE="PapComment" FORMAT="1.00" ID="4">
+                <TEXT><![CDATA[Open or refreshing the Website]]></TEXT>
+              </FIGURE>
+            </ENTRY>
+            <ENTRY COLUMN="2" ROW="2">
+              <FIGURE SUBTYPE="PapComment" FORMAT="1.00" ID="14">
+                <TEXT><![CDATA[950 seconds = about 15 minutes.
+add 7500 the berlin timezone.]]></TEXT>
+              </FIGURE>
+            </ENTRY>
+            <ENTRY COLUMN="2" ROW="3">
+              <FIGURE SUBTYPE="PapComment" FORMAT="1.00" ID="15">
+                <TEXT><![CDATA[Get hte last time insert in cacheDB]]></TEXT>
+              </FIGURE>
+            </ENTRY>
+            <ENTRY COLUMN="2" ROW="4">
+              <FIGURE SUBTYPE="PapComment" FORMAT="1.00" ID="16">
+                <TEXT><![CDATA[check if this time in Allwabel time]]></TEXT>
+              </FIGURE>
+            </ENTRY>
+            <ENTRY COLUMN="3" ROW="4">
+              <FIGURE SUBTYPE="PapComment" FORMAT="1.00" ID="17">
+                <TEXT><![CDATA[get weather data from cachDB]]></TEXT>
+              </FIGURE>
+            </ENTRY>
+            <ENTRY COLUMN="3" ROW="5">
+              <FIGURE SUBTYPE="PapActivity" FORMAT="1.00" ID="11">
+                <TEXT><![CDATA[weathrData = cache.hgetall('key')]]></TEXT>
+              </FIGURE>
+            </ENTRY>
+            <ENTRY COLUMN="3" ROW="6">
+              <FIGURE SUBTYPE="PapConnector" FORMAT="1.00" ID="26">
+                <TEXT><![CDATA[]]></TEXT>
+              </FIGURE>
+            </ENTRY>
+          </ENTRIES>
+        </LAYOUT>
+        <CONNECTIONS>
+          <CONNECTION FORMAT="1.00" ID="3" FROM="1" TO="5" TEXT="" />
+          <CONNECTION FORMAT="1.00" ID="6" FROM="5" TO="7" TEXT="" />
+          <CONNECTION FORMAT="1.00" ID="8" FROM="7" TO="9" TEXT="" />
+          <CONNECTION FORMAT="1.00" ID="24" FROM="20" TO="23" TEXT="" />
+          <CONNECTION FORMAT="1.00" ID="12" FROM="9" TO="11" TEXT="yes" />
+          <CONNECTION FORMAT="1.00" ID="25" FROM="23" TO="29" TEXT="" />
+          <CONNECTION FORMAT="1.00" ID="21" FROM="9" TO="20" TEXT="no" />
+          <CONNECTION FORMAT="1.00" ID="19" FROM="29" TO="2" TEXT="" />
+          <CONNECTION FORMAT="1.00" ID="27" FROM="11" TO="26" TEXT="" />
+          <CONNECTION FORMAT="1.00" ID="28" FROM="26" TO="29" TEXT="" />
+        </CONNECTIONS>
+      </DIAGRAM>
+      <DIAGRAM FORMAT="1.00" ID="1" NAME="get_current_weather" CREATED="2019.10.19 12:32:54" MODIFIED="2019.10.19 12:32:54">
+        <LAYOUT FORMAT="1.00" COLUMNS="1" ROWS="4">
+          <ENTRIES>
+            <ENTRY COLUMN="0" ROW="0" ANCHOR="True">
+              <FIGURE SUBTYPE="PapTitle" FORMAT="1.00" ID="0">
+                <TEXT><![CDATA[get_current_weather]]></TEXT>
+              </FIGURE>
+            </ENTRY>
+            <ENTRY COLUMN="0" ROW="1">
+              <FIGURE SUBTYPE="PapStart" FORMAT="1.00" ID="1">
+                <TEXT><![CDATA[Start]]></TEXT>
+              </FIGURE>
+            </ENTRY>
+            <ENTRY COLUMN="0" ROW="2">
+              <FIGURE SUBTYPE="PapActivity" FORMAT="1.00" ID="6">
+                <TEXT><![CDATA[Input]]></TEXT>
+              </FIGURE>
+            </ENTRY>
+            <ENTRY COLUMN="0" ROW="3">
+              <FIGURE SUBTYPE="PapEnd" FORMAT="1.00" ID="2">
+                <TEXT><![CDATA[End]]></TEXT>
+              </FIGURE>
+            </ENTRY>
+          </ENTRIES>
+        </LAYOUT>
+        <CONNECTIONS>
+          <CONNECTION FORMAT="1.00" ID="5" FROM="6" TO="2" TEXT="" />
+          <CONNECTION FORMAT="1.00" ID="3" FROM="1" TO="6" TEXT="jjhfjh" />
+        </CONNECTIONS>
+      </DIAGRAM>
+    </DIAGRAMS>
+  </PROJECT>
+</FRAME>
